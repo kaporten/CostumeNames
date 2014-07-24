@@ -119,8 +119,10 @@ function CostumeNames:Character_InterceptCostumeSelectionWindowUnCheck(wndHandle
 	CN.Character_CostumeSelectionWindowUnCheck(Character, wndHandler, wndControl)
 	
 	-- And hide my own overlay
-	CN.wndCharacterOverlay:Show(false, true)
-	CostumeNames:ToggleEditability(false)	
+	if CN.wndCharacterOverlay ~= nil then
+		CN.wndCharacterOverlay:Show(false, true)	
+		CostumeNames:ToggleEditability(false)	
+	end
 end
 
 
@@ -152,6 +154,9 @@ function CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
 		wndCostumeBtnHolder:FindChild("CostumeBtn"..idx):SetText(strSavedName)		
 	end
 end
+
+
+	--[[ Character addon support functions ]]
 
 function CostumeNames:ToggleEditability(bEdit)
 	local nCurrentCostume = GameLib.GetCostumeIndex()
@@ -188,8 +193,31 @@ function CostumeNames:Costumes_InterceptShowCostumeWindow()
 	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(GameLib.GetCostumeIndex()))
 	
 	-- Load overlay form
-	CN.wndCostumesOverlay = Apollo.LoadForm(CN.xmlDoc, "CostumesOverlayForm", costumeBtnHolder:GetParent(), CostumeNames)	
+	if CN.wndCostumesOverlay == nil then
+		CN.wndCostumesOverlay = Apollo.LoadForm(CN.xmlDoc, "CostumesOverlayForm", costumeBtnHolder:GetParent(), CostumeNames)
+		CN.wndCostumesOverlay:Show(true, true)
+		CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
+	end
+end
+
+
+	--[[ Costume addon overlay button functions ]]
+
+function CostumeNames:OnCostumesEditNameButtonCheck()
+	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):Show(false, true)
+
+	local wndEditbox = CN.wndCostumesOverlay:FindChild("CostumeNameEdit")
+	wndEditbox:SetText(Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):GetText())
+	wndEditbox:Show(true, true)	
+end
+
+function CostumeNames:OnCostumesEditNameButtonUncheck()
+	local strNewName = CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):GetText()
+	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(strNewName)
+	CN.tSettings.tCostumeNames[GameLib.GetCostumeIndex()] = strNewName
 	
+	CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
+	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):Show(true, true)
 end
 
 
