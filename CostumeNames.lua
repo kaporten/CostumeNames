@@ -50,8 +50,9 @@ function CostumeNames:OnLoad()
 		self.Character_CostumeSelectionWindowUnCheck = Character.CostumeSelectionWindowUnCheck
 		Character.CostumeSelectionWindowUnCheck = self.Character_InterceptCostumeSelectionWindowUnCheck		
 	
-		-- Register for event fired when a costume selection is made
+		-- Register for event fired when a costume selection is made, or window is closed
 		Apollo.RegisterEventHandler("CharacterPanel_CostumeUpdated", "Character_InterceptCostumeSelectionWindowUnCheck", self)
+		Apollo.RegisterEventHandler("CharacterWindowHasBeenClosed", "Character_InterceptCostumeSelectionWindowUnCheck", self)
 	end
 	
 	Costumes = Apollo.GetAddon("Costumes")
@@ -77,7 +78,7 @@ function CostumeNames:Character_InterceptCostumeSelectionWindowCheck()
 	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)
 	
 	-- Show overlay window itself
-	CostumeNames.wndCharacterOverlay:Show(true, false)	
+	CostumeNames.wndCharacterOverlay:Show(true, true)	
 end
 
 function CostumeNames:Character_InterceptCostumeSelectionWindowUnCheck(wndHandler, wndControl)
@@ -125,7 +126,7 @@ local CostumeNames = Apollo.GetAddon("CostumeNames")
 			-- Edit-mode OFF, update settings and button labels			
 			local strNewName = CostumeNames.wndCharacterOverlay:FindChild("CostumeNameEdit"..idx):GetText()
 			Character.wndCharacter:FindChild("CostumeBtn"..idx):SetText(strNewName)
-			self.tSettings.tCostumeNames[idx] = strNewName
+			self.tSettings.tCostumeNames[idx] = strNewName			
 		end
 
 		-- Update show/hide of buttons and editboxes
