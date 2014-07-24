@@ -218,6 +218,10 @@ function CostumeNames:OnCostumesEditNameButtonUncheck()
 	
 	CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
 	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):Show(true, true)
+	
+	-- Update all button texts
+	local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
+	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)	
 end
 
 
