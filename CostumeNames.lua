@@ -80,9 +80,8 @@ end
 	--[[ Hooks into Character addon ]]
 	
 
--- Only hooked to re-hide costume buttons. They keep getting shown by various events triggering ShowCharacterWindow.
+-- Only hooked to re-hide costume buttons. They keep getting shown by various events triggering "UpdateCostumeSlotIcons.
 function CostumeNames:Character_InterceptUpdateCostumeSlotIcons()
-	Print("UpdateCostumeSlotIcons!")
 	-- Pass on to character
 	CN.Character_UpdateCostumeSlotIcons(Character)
 	
