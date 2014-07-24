@@ -5,7 +5,7 @@
 require "Window"
 
 local CostumeNames = {} 
-local Character
+local Character, Costumes
 
 function CostumeNames:new(o)
     o = o or {}
@@ -43,26 +43,31 @@ function CostumeNames:OnLoad()
 	Character = Apollo.GetAddon("Character")
 	if Character ~= nil then
 		-- Hook showing of Costume selection window
-		self.OrigCostumeSelectionWindowCheck = Character.CostumeSelectionWindowCheck
-		Character.CostumeSelectionWindowCheck = CostumeNames.InterceptCostumeSelectionWindowCheck
+		self.Character_CostumeSelectionWindowCheck = Character.CostumeSelectionWindowCheck
+		Character.CostumeSelectionWindowCheck = self.Character_InterceptCostumeSelectionWindowCheck
 
 		-- Hook hiding of Costume selection window
-		self.OrigCostumeSelectionWindowUnCheck = Character.CostumeSelectionWindowUnCheck
-		Character.CostumeSelectionWindowUnCheck = CostumeNames.InterceptCostumeSelectionWindowUnCheck		
+		self.Character_CostumeSelectionWindowUnCheck = Character.CostumeSelectionWindowUnCheck
+		Character.CostumeSelectionWindowUnCheck = self.Character_InterceptCostumeSelectionWindowUnCheck		
 	
 		-- Register for event fired when a costume selection is made
-		Apollo.RegisterEventHandler("CharacterPanel_CostumeUpdated", "InterceptCostumeSelectionWindowUnCheck", CostumeNames)
+		Apollo.RegisterEventHandler("CharacterPanel_CostumeUpdated", "Character_InterceptCostumeSelectionWindowUnCheck", self)
+	end
+	
+	Costumes = Apollo.GetAddon("Costumes")
+	if Costumes ~= nil then
+	
 	end
 end
 
 
 	--[[ Hooks into Character addon ]]
 	
-function CostumeNames:InterceptCostumeSelectionWindowCheck()
+function CostumeNames:Character_InterceptCostumeSelectionWindowCheck()
 	local CostumeNames = Apollo.GetAddon("CostumeNames") -- Injected method, no ref for CostumeNames
 	
 	-- Show costume selection window
-	CostumeNames.OrigCostumeSelectionWindowCheck(Character)
+	CostumeNames.Character_CostumeSelectionWindowCheck(Character)
 	
 	-- Load overlay form, using same parent as the costume button holder
 	local costumeBtnHolder = Character.wndCharacter:FindChild("CostumeBtnHolder")
@@ -75,12 +80,12 @@ function CostumeNames:InterceptCostumeSelectionWindowCheck()
 	CostumeNames.wndCharacterOverlay:Show(true, false)	
 end
 
-function CostumeNames:InterceptCostumeSelectionWindowUnCheck(wndHandler, wndControl)
+function CostumeNames:Character_InterceptCostumeSelectionWindowUnCheck(wndHandler, wndControl)
 	-- Hide the Character overlay window
 	local CostumeNames = Apollo.GetAddon("CostumeNames") -- Injected method, no ref for CostumeNames
 	
 	-- Pass uncheck on to Character
-	CostumeNames.OrigCostumeSelectionWindowUnCheck(Character, wndHandler, wndControl)
+	CostumeNames.Character_CostumeSelectionWindowUnCheck(Character, wndHandler, wndControl)
 	
 	-- And hide my own overlay
 	CostumeNames.wndCharacterOverlay:Show(false, true)
