@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Addon Author="porten" APIVersion="9" Name="CostumeNames" Description="Allows you to specify costume names, rather than just the default &quot;Costume X&quot;.">
+    <Script Name="CostumeNames.lua"/>
+	<Form Name="CostumeNames.xml"/>
+</Addon>
