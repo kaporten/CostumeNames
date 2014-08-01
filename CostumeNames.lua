@@ -48,19 +48,7 @@ function CostumeNames:OnDocLoaded()
 	Character = Apollo.GetAddon("Character")
 	if Character ~= nil then
 		CN.Character_UpdateCostumeSlotIcons = Character.UpdateCostumeSlotIcons
-		Character.UpdateCostumeSlotIcons = CN.Character_InterceptUpdateCostumeSlotIcons
-	
-		-- Hook showing of Costume selection window
-		CN.Character_CostumeSelectionWindowCheck = Character.CostumeSelectionWindowCheck
-		Character.CostumeSelectionWindowCheck = CN.Character_InterceptCostumeSelectionWindowCheck
-
-		-- Hook hiding of Costume selection window
-		CN.Character_CostumeSelectionWindowUnCheck = Character.CostumeSelectionWindowUnCheck
-		Character.CostumeSelectionWindowUnCheck = CN.Character_InterceptCostumeSelectionWindowUnCheck		
-	
-		-- Register for event fired when a costume selection is made, or window is closed
-		Apollo.RegisterEventHandler("CharacterPanel_CostumeUpdated", "Character_InterceptCostumeSelectionWindowUnCheck", CN)
-		Apollo.RegisterEventHandler("CharacterWindowHasBeenClosed", "Character_InterceptCostumeSelectionWindowUnCheck", CN)		
+		Character.UpdateCostumeSlotIcons = CN.Character_InterceptUpdateCostumeSlotIcons	
 	else
 		Print("Warning: Addon 'CostumeNames' is designed for use with the stock Character addon.")
 	end
@@ -78,105 +66,15 @@ end
 
 
 	--[[ Hooks into Character addon ]]
-	
 
--- Only hooked to re-hide costume buttons. They keep getting shown by various events triggering "UpdateCostumeSlotIcons.
 function CostumeNames:Character_InterceptUpdateCostumeSlotIcons()
 	-- Pass on to character
 	CN.Character_UpdateCostumeSlotIcons(Character)
-	
-	-- And re-toggle editability of fields (just check if any of my editfields are visible)
-	if CN.wndCharacterOverlay ~= nil then
-		CN:ToggleEditability(CN.wndCharacterOverlay:FindChild("CostumeNameEdit1"):IsShown())
-	end
-end
 
--- Show the Character overlay window
-function CostumeNames:Character_InterceptCostumeSelectionWindowCheck()
-	-- Show costume selection window
-	CN.Character_CostumeSelectionWindowCheck(Character)
-	
-	-- Load Character overlay form first time the costumes button is pressed
+	-- Populate Character costume selection button texts
 	local wndCostumeBtnHolder = Character.wndCharacter:FindChild("CostumeBtnHolder")
-	if CN.wndCharacterOverlay == nil then				
-		CN.wndCharacterOverlay = Apollo.LoadForm(CN.xmlDoc, "CharacterOverlayForm", wndCostumeBtnHolder:GetParent(), CostumeNames)	
-		if CN.wndCharacterOverlay == nil then		
-			Apollo.AddAddonErrorText(CostumeNames, "CharacterOverlayForm not loaded")
-			return
-		end
-	end
-			
-	-- Populate overlay form with initial button texts
-	CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
-	
-	-- Show overlay window itself
-	CN.wndCharacterOverlay:Show(true, true)	
-end
-
--- Hide the Character overlay window
-function CostumeNames:Character_InterceptCostumeSelectionWindowUnCheck(wndHandler, wndControl)
-	-- Pass uncheck on to Character
-	CN.Character_CostumeSelectionWindowUnCheck(Character, wndHandler, wndControl)
-	
-	-- And hide my own overlay
-	if CN.wndCharacterOverlay ~= nil then
-		CN.wndCharacterOverlay:Show(false, true)	
-		CostumeNames:ToggleEditability(false)	
-	end
-end
-
-
-	--[[ Character-addon overlay button functions ]]
-
-function CostumeNames:OnEditNameButtonCheck(wndHandler, wndControl, eMouseButton)
-	--local CostumeNames = Apollo.GetAddon("CostumeNames") -- Injected function, no ref for CostumeNames
-	CN:ToggleEditability(true)
-	
-	-- Populate the list of selection buttons with correct name
-	CN:PopulateButtonsFromSettings(Character.wndCharacter:FindChild("CostumeBtnHolder"))
-	
-	-- Also populate the corresponding Character overlay editboxes with same value
-	for idx = 1, GameLib.GetCostumeCount() do
-		local strSavedName = CostumeNames:GetName(idx)
-		CN.wndCharacterOverlay:FindChild("CostumeNameEdit"..idx):SetText(strSavedName)		
-	end
-end
-
-function CostumeNames:OnEditNameButtonUncheck(wndHandler, wndControl, eMouseButton)
-	CN:ToggleEditability(false)
-	CN:UpdateNamesFromCharacterEdit()
-end
-
--- Initial population of button labels and editbox values from saved settings
-function CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
-	for idx = 1, GameLib.GetCostumeCount() do
-		local strSavedName = CostumeNames:GetName(idx)
-		wndCostumeBtnHolder:FindChild("CostumeBtn"..idx):SetText(strSavedName)		
-	end
-end
-
-
-	--[[ Character addon support functions ]]
-
-function CostumeNames:ToggleEditability(bEdit)
-	local nCurrentCostume = GameLib.GetCostumeIndex()
-	for idx = 1, GameLib.GetCostumeCount() do
-		-- Update show/hide of buttons and editboxes
-		Character.wndCharacter:FindChild("CostumeBtn"..idx):Show(not bEdit, true)
-		
-		local wndEdit = CN.wndCharacterOverlay:FindChild("CostumeNameEdit"..idx)
-		wndEdit:SetTextColor(nCurrentCostume == idx and "ChannelSupport" or "UI_BtnTextGoldListNormal") -- highlight current costume by text color
-		wndEdit:Show(bEdit, true)
-	end
-end
-
-function CostumeNames:UpdateNamesFromCharacterEdit()
-	local CostumeNames = Apollo.GetAddon("CostumeNames")
-	
-	for idx = 1, GameLib.GetCostumeCount() do
-		local strNewName = CN.wndCharacterOverlay:FindChild("CostumeNameEdit"..idx):GetText()
-		Character.wndCharacter:FindChild("CostumeBtn"..idx):SetText(strNewName)
-		CN.tSettings.tCostumeNames[idx] = strNewName			
+	if wndCostumeBtnHolder ~= nil then
+		CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
 	end
 end
 
@@ -222,6 +120,23 @@ function CostumeNames:OnCostumesEditNameButtonUncheck()
 	-- Update all button texts
 	local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
 	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)	
+	
+	-- Also update buttons on Character panel if possible
+	local wndCostumeBtnHolder = Character.wndCharacter:FindChild("CostumeBtnHolder")
+	if wndCostumeBtnHolder ~= nil then
+		CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
+	end	
+end
+
+
+	--[[ Common functions ]]
+
+-- Population of button labels and editbox values from saved settings
+function CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
+	for idx = 1, GameLib.GetCostumeCount() do
+		local strSavedName = CostumeNames:GetName(idx)
+		wndCostumeBtnHolder:FindChild("CostumeBtn"..idx):SetText(strSavedName)		
+	end
 end
 
 
