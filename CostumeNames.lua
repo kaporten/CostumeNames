@@ -59,6 +59,9 @@ function CostumeNames:OnDocLoaded()
 		-- Hook showing Costumes window
 		CN.Costumes_ShowCostumeWindow = Costumes.ShowCostumeWindow
 		Costumes.ShowCostumeWindow = CN.Costumes_InterceptShowCostumeWindow
+		
+		CN.Costumes_UpdateCostumeSlotIcons = Costumes.UpdateCostumeSlotIcons
+		Costumes.UpdateCostumeSlotIcons = CN.Costumes_InterceptUpdateCostumeSlotIcons
 	else
 		Print("Warning: Addon 'CostumeNames' is designed for use with the stock Costumes addon.")
 	end
@@ -96,6 +99,16 @@ function CostumeNames:Costumes_InterceptShowCostumeWindow()
 		CN.wndCostumesOverlay:Show(true, true)
 		CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
 	end
+end
+
+function CostumeNames:Costumes_InterceptUpdateCostumeSlotIcons()
+	-- Allow icons to be updated
+	CN.Costumes_UpdateCostumeSlotIcons(Costumes)
+	
+	-- Update all button texts
+	local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
+	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)
+	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(GameLib.GetCostumeIndex()))
 end
 
 
