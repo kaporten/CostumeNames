@@ -47,8 +47,8 @@ function CostumeNames:OnDocLoaded()
 	-- Prepare hooks & overlays for Character addon
 	Character = Apollo.GetAddon("Character")
 	if Character ~= nil then
-		CN.Character_UpdateCostumeSlotIcons = Character.UpdateCostumeSlotIcons
-		Character.UpdateCostumeSlotIcons = CN.Character_InterceptUpdateCostumeSlotIcons	
+		CN.Character_Orig_ShowCharacterWindow = Character.ShowCharacterWindow
+		Character.ShowCharacterWindow = CN.Character_Hook_ShowCharacterWindow	
 	else
 		Print("Warning: Addon 'CostumeNames' is designed for use with the stock Character addon.")
 	end
@@ -57,22 +57,29 @@ function CostumeNames:OnDocLoaded()
 	Costumes = Apollo.GetAddon("Costumes")
 	if Costumes ~= nil then
 		-- Hook showing Costumes window
-		CN.Costumes_ShowCostumeWindow = Costumes.ShowCostumeWindow
-		Costumes.ShowCostumeWindow = CN.Costumes_InterceptShowCostumeWindow
-		
-		CN.Costumes_UpdateCostumeSlotIcons = Costumes.UpdateCostumeSlotIcons
-		Costumes.UpdateCostumeSlotIcons = CN.Costumes_InterceptUpdateCostumeSlotIcons
+		CN.Costumes_Orig_RedrawCostume = Costumes.RedrawCostume
+		Costumes.RedrawCostume = CN.Costumes_Hook_RedrawCostume
 	else
 		Print("Warning: Addon 'CostumeNames' is designed for use with the stock Costumes addon.")
 	end
 end
 
 
-	--[[ Hooks into Character addon ]]
+-- Hook into the Character addon
+function CostumeNames:Character_Hook_ShowCharacterWindow()
+	-- Pass call to Character addon
+	CN.Character_Orig_ShowCharacterWindow(Character)
 
-function CostumeNames:Character_InterceptUpdateCostumeSlotIcons()
-	-- Pass on to character
-	CN.Character_UpdateCostumeSlotIcons(Character)
+	-- Update the Character-window button labels
+	CN.UpdateCharacterWindow()
+end
+
+
+function CostumeNames:UpdateCharacterWindow()
+	-- Safeguars against calls made when Character is not initialized/present (such as when updating names in the Holo Wardrobe)
+	if Character == nil or Character.wndCharacter == nil then
+		return 
+	end
 
 	-- Populate Character costume selection button texts
 	local wndCostumeBtnHolder = Character.wndCharacter:FindChild("CostumeBtnHolder")
@@ -82,35 +89,45 @@ function CostumeNames:Character_InterceptUpdateCostumeSlotIcons()
 end
 
 
-	--[[ Hooks into Costumes addon ]]
-	
-function CostumeNames:Costumes_InterceptShowCostumeWindow()
+-- Hook into the Costumes addon
+function CostumeNames:Costumes_Hook_RedrawCostume()
+	Print("Test")
 	-- Allow window to be shown
-	CN.Costumes_ShowCostumeWindow(Costumes)
+	CN.Costumes_Orig_RedrawCostume(Costumes)
 	
-	-- Update all button texts
-	local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
-	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)
-	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(GameLib.GetCostumeIndex()))
+	-- Update the Costume-window button labels
+	CN.UpdateCostumeWindow()
 	
 	-- Load overlay form
+	--[[
 	if CN.wndCostumesOverlay == nil then
 		CN.wndCostumesOverlay = Apollo.LoadForm(CN.xmlDoc, "CostumesOverlayForm", costumeBtnHolder:GetParent(), CostumeNames)
 		CN.wndCostumesOverlay:Show(true, true)
 		CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
 	end
+	--]]
 end
 
-function CostumeNames:Costumes_InterceptUpdateCostumeSlotIcons()
-	-- Allow icons to be updated
-	CN.Costumes_UpdateCostumeSlotIcons(Costumes)
+function CostumeNames:UpdateCostumeWindow()
+	-- Safeguars against calls made when Costumes is not initialized/present (should not be required)
+	--if Costumes == nil or Costumes.wndMain == nil then
+	--	return 
+	--end
 	
 	-- Update all button texts
-	local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
-	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)
-	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(GameLib.GetCostumeIndex()))
-end
+	local wndButtonHolder = Costumes.wndMain:FindChild("CostumeBtnHolder"):FindChild("Framing")	
+	Print(#wndButtonHolder:GetChildren())
+	for idx = 1, CostumesLib.GetCostumeCount() do
+		local strSavedName = CostumeNames:GetName(idx)
+		local wndButton = wndButtonHolder:FindChildByUserData(idx)
+		if wndButton ~= nil then
+			wndButton:SetText(strSavedName)
+		end
+	end
 
+	-- Update button with selected-costume name
+	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(CostumesLib.GetCostumeIndex()))
+end
 
 	--[[ Costume addon overlay button functions ]]
 
@@ -146,12 +163,16 @@ end
 
 -- Population of button labels and editbox values from saved settings
 function CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
-	for idx = 1, GameLib.GetCostumeCount() do
+	for idx = 1, CostumesLib.GetCostumeCount() do
 		local strSavedName = CostumeNames:GetName(idx)
 		wndCostumeBtnHolder:FindChild("CostumeBtn"..idx):SetText(strSavedName)		
 	end
 end
 
+-- Gets a name from the saved tSettings-list, or provides a localized default "Costume X" string if no name is present
+function CostumeNames:GetName(idx)
+	return CN.tSettings.tCostumeNames[idx] or String_GetWeaselString(Apollo.GetString("Character_CostumeNum"), idx)	
+end
 
 	--[[ Save/Restore savedata ]]
 	
@@ -173,11 +194,5 @@ function CostumeNames:OnRestore(eType, tSavedData)
 	CN.tSettings.tCostumeNames = CN.tSettings.tCostumeNames or {}
 end
 
-function CostumeNames:GetName(idx)
-	return CN.tSettings.tCostumeNames[idx] or String_GetWeaselString(Apollo.GetString("Character_CostumeNum"), idx)	
-end
-
-
 local CostumeNamesInst = CostumeNames:new()
 CostumeNamesInst:Init()
-
