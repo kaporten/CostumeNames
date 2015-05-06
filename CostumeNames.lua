@@ -100,8 +100,9 @@ function CostumeNames:Costumes_Hook_RedrawCostume()
 	CN.UpdateCostumeWindow()
 	
 	-- Load overlay form
-	--[[
-	if CN.wndCostumesOverlay == nil then
+	---[[
+	if CN.wndCostumesOverlay == nil and Costumes.wndMain ~= nil then
+		local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
 		CN.wndCostumesOverlay = Apollo.LoadForm(CN.xmlDoc, "CostumesOverlayForm", costumeBtnHolder:GetParent(), CostumeNames)
 		CN.wndCostumesOverlay:Show(true, true)
 		CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
@@ -110,7 +111,6 @@ function CostumeNames:Costumes_Hook_RedrawCostume()
 end
 
 function CostumeNames:OnCostumeChanged()
-	Print("OnCostumeChanged")
 	self:UpdateCostumeWindow()
 end
 
@@ -133,41 +133,52 @@ function CostumeNames:UpdateCostumeWindow()
 	end
 
 	-- Update button with selected-costume name
-	--Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(CostumesLib.GetCostumeIndex()))
+	-- NB: Costumes.nSelectedCostumeId references the currently displayed (not equipped) costume. 
+	-- If this is value is 0 it is because the "No Costume" option is selected in the Costume window
 	if Costumes.nSelectedCostumeId ~= 0 then
 		Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex()))
+	end
+	
+	-- Enable or disable edit button depending on "No Costume" idx 0 selection
+	if CN.wndCostumesOverlay ~= nil and CN.wndCostumesOverlay:FindChild("CostumeNameEditButton") ~= nil then
+		CN.wndCostumesOverlay:FindChild("CostumeNameEditButton"):Show(Costumes.nSelectedCostumeId ~= 0)
 	end
 end
 
 	--[[ Costume addon overlay button functions ]]
 
 function CostumeNames:OnCostumesEditNameButtonCheck()
+	-- Hide dropdown button
 	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):Show(false, true)
 
+	-- Show editbox instead, focus and place cursor at end
 	local wndEditbox = CN.wndCostumesOverlay:FindChild("CostumeNameEdit")
-	wndEditbox:SetText(Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):GetText())
+	wndEditbox:SetText(Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):GetText())	
 	wndEditbox:Show(true, true)	
+	wndEditbox:SetFocus(true)
+	wndEditbox:SetSel(string.len(wndEditbox:GetText()), string.len(wndEditbox:GetText()))
 end
 
 function CostumeNames:OnCostumesEditNameButtonUncheck()
-	local strNewName = CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):GetText()
-	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(strNewName)
-	CN.tSettings.tCostumeNames[GameLib.GetCostumeIndex()] = strNewName
+	-- Hide editbox
+	local wndEditbox = CN.wndCostumesOverlay:FindChild("CostumeNameEdit")	
+	wndEditbox:Show(false, true)		
 	
-	CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
+	-- Show dropdown button
 	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):Show(true, true)
-	
-	-- Update all button texts
-	local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
-	CostumeNames:PopulateButtonsFromSettings(costumeBtnHolder)	
-	
-	-- Also update buttons on Character panel if possible
-	local wndCostumeBtnHolder = Character.wndCharacter:FindChild("CostumeBtnHolder")
-	if wndCostumeBtnHolder ~= nil then
-		CostumeNames:PopulateButtonsFromSettings(wndCostumeBtnHolder)
-	end	
 end
 
+function CostumeNames:OnEditBoxChanged(wndHandler, wndControl, strText)
+	local idx = Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex()
+	
+	-- Update settings with new name
+	CN.tSettings.tCostumeNames[idx] = strText
+	
+	-- Update Costumes and Character windows
+	CN:UpdateCostumeWindow()
+	CN:UpdateCharacterWindow()
+
+end
 
 	--[[ Common functions ]]
 
