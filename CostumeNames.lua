@@ -137,17 +137,25 @@ function CostumeNames:UpdateCostumeWindow()
 			wndButton:SetText(strSavedName)
 		end
 	end
-
-	-- Update button with selected-costume name
+	
+	-- Determine if a costume is selected in the holo wardrobe
+	-- (You can select No Costume here, even if a costume is equipped)
 	-- NB: Costumes.nSelectedCostumeId references the currently displayed (not equipped) costume. 
 	-- If this is value is 0 it is because the "No Costume" option is selected in the Costume window
-	if Costumes.nSelectedCostumeId ~= 0 then
+	local bCostumeSelected = 
+			(Costumes.nSelectedCostumeId == nil and CostumesLib.GetCostumeIndex() > 0) or  -- No costume selected in holowardrobe (check current costume index)
+			(Costumes.nSelectedCostumeId ~= nil and Costumes.nSelectedCostumeId > 0)  -- Costume selected in holowardrobe (check displayed index)
+		
+	-- Set costume button to either the custom costume name, or "No Custume" (at idx 0) if no costume is selected
+	if bCostumeSelected then
 		Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex()))
+	else
+		Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(Costumes.wndMain:FindChild("CostumeBtnHolder"):FindChild("Framing"):FindChildByUserData(0):GetText())
 	end
 	
 	-- Enable or disable edit button depending on "No Costume" idx 0 selection
-	if CN.wndCostumesOverlay ~= nil and CN.wndCostumesOverlay:FindChild("CostumeNameEditButton") ~= nil then
-		CN.wndCostumesOverlay:FindChild("CostumeNameEditButton"):Show(Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex() > 0)
+	if CN.wndCostumesOverlay ~= nil and CN.wndCostumesOverlay:FindChild("CostumeNameEditButton") ~= nil then		
+		CN.wndCostumesOverlay:FindChild("CostumeNameEditButton"):Show(bCostumeSelected)
 	end
 end
 
