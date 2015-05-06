@@ -58,9 +58,12 @@ function CostumeNames:OnDocLoaded()
 	-- Prepare hooks & overlays for Costumes addon
 	Costumes = Apollo.GetAddon("Costumes")
 	if Costumes ~= nil then
-		-- Hook showing Costumes window
+		-- Hook Costumes window functions
+		CN.Costumes_Orig_SharedInit = Costumes.SharedInit
+		Costumes.SharedInit = CN.Costumes_Hook_SharedInit
+
 		CN.Costumes_Orig_RedrawCostume = Costumes.RedrawCostume
-		Costumes.RedrawCostume = CN.Costumes_Hook_RedrawCostume
+		Costumes.RedrawCostume = CN.Costumes_Hook_RedrawCostume	
 	else
 		Print("Warning: Addon 'CostumeNames' is designed for use with the stock Costumes addon.")
 	end
@@ -92,22 +95,25 @@ end
 
 
 -- Hook into the Costumes addon
+function CostumeNames:Costumes_Hook_SharedInit()
+	-- Allow call to complete
+	CN.Costumes_Orig_SharedInit(Costumes)
+
+	-- Load overlay form
+	if Costumes.wndMain ~= nil then		
+		local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
+		CN.wndCostumesOverlay = Apollo.LoadForm(CN.xmlDoc, "CostumesOverlayForm", costumeBtnHolder:GetParent(), CostumeNames)
+		CN.wndCostumesOverlay:Show(true, true)
+		CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true) -- Hide, will be re-shown by UpdateCostumeWindow if appropriate
+	end
+end
+
 function CostumeNames:Costumes_Hook_RedrawCostume()
 	-- Allow window to be shown
 	CN.Costumes_Orig_RedrawCostume(Costumes)
 	
 	-- Update the Costume-window button labels
 	CN.UpdateCostumeWindow()
-	
-	-- Load overlay form
-	---[[
-	if CN.wndCostumesOverlay == nil and Costumes.wndMain ~= nil then
-		local costumeBtnHolder = Costumes.wndMain:FindChild("CostumeBtnHolder")
-		CN.wndCostumesOverlay = Apollo.LoadForm(CN.xmlDoc, "CostumesOverlayForm", costumeBtnHolder:GetParent(), CostumeNames)
-		CN.wndCostumesOverlay:Show(true, true)
-		CN.wndCostumesOverlay:FindChild("CostumeNameEdit"):Show(false, true)
-	end
-	--]]
 end
 
 function CostumeNames:OnCostumeChanged()
@@ -141,7 +147,7 @@ function CostumeNames:UpdateCostumeWindow()
 	
 	-- Enable or disable edit button depending on "No Costume" idx 0 selection
 	if CN.wndCostumesOverlay ~= nil and CN.wndCostumesOverlay:FindChild("CostumeNameEditButton") ~= nil then
-		CN.wndCostumesOverlay:FindChild("CostumeNameEditButton"):Show(Costumes.nSelectedCostumeId ~= 0)
+		CN.wndCostumesOverlay:FindChild("CostumeNameEditButton"):Show(Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex() > 0)
 	end
 end
 
@@ -177,7 +183,11 @@ function CostumeNames:OnEditBoxChanged(wndHandler, wndControl, strText)
 	-- Update Costumes and Character windows
 	CN:UpdateCostumeWindow()
 	CN:UpdateCharacterWindow()
+end
 
+-- Hitting return is the same as clicking uncheck
+function CostumeNames:OnEditBoxReturn(wndHandler, wndControl, strText)
+	self:OnCostumesEditNameButtonUncheck()
 end
 
 	--[[ Common functions ]]
