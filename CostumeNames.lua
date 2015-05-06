@@ -26,6 +26,8 @@ function CostumeNames:Init()
 	self.tSettings = self.tSettings or {}
 	self.tSettings.tCostumeNames = self.tSettings.tCostumeNames or {}
 	
+	Apollo.RegisterEventHandler("CostumeSet", "OnCostumeChanged", self)
+	
     Apollo.RegisterAddon(self, bHasConfigureFunction, strConfigureButtonText, tDependencies)	
 	CN = self
 end
@@ -91,7 +93,6 @@ end
 
 -- Hook into the Costumes addon
 function CostumeNames:Costumes_Hook_RedrawCostume()
-	Print("Test")
 	-- Allow window to be shown
 	CN.Costumes_Orig_RedrawCostume(Costumes)
 	
@@ -108,15 +109,21 @@ function CostumeNames:Costumes_Hook_RedrawCostume()
 	--]]
 end
 
+function CostumeNames:OnCostumeChanged()
+	Print("OnCostumeChanged")
+	self:UpdateCostumeWindow()
+end
+
+
+
 function CostumeNames:UpdateCostumeWindow()
-	-- Safeguars against calls made when Costumes is not initialized/present (should not be required)
-	--if Costumes == nil or Costumes.wndMain == nil then
-	--	return 
-	--end
+	-- Safeguars against calls made when Costumes is not initialized/present
+	if Costumes == nil or Costumes.wndMain == nil then
+		return 
+	end
 	
 	-- Update all button texts
 	local wndButtonHolder = Costumes.wndMain:FindChild("CostumeBtnHolder"):FindChild("Framing")	
-	Print(#wndButtonHolder:GetChildren())
 	for idx = 1, CostumesLib.GetCostumeCount() do
 		local strSavedName = CostumeNames:GetName(idx)
 		local wndButton = wndButtonHolder:FindChildByUserData(idx)
@@ -126,7 +133,10 @@ function CostumeNames:UpdateCostumeWindow()
 	end
 
 	-- Update button with selected-costume name
-	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(CostumesLib.GetCostumeIndex()))
+	--Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(CostumesLib.GetCostumeIndex()))
+	if Costumes.nSelectedCostumeId ~= 0 then
+		Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):SetText(CostumeNames:GetName(Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex()))
+	end
 end
 
 	--[[ Costume addon overlay button functions ]]
