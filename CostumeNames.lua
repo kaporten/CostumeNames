@@ -4,6 +4,7 @@
 
 require "Window"
 
+local Major, Minor, Patch = 3, 1, 0
 local CostumeNames = {} 
 local Character, Costumes
 local CN
@@ -43,6 +44,8 @@ function CostumeNames:OnLoad()
     -- Load form for later use
 	CN.xmlDoc = XmlDoc.CreateFromFile("CostumeNames.xml")
 	CN.xmlDoc:RegisterCallback("OnDocLoaded", CN)
+	
+	Event_FireGenericEvent("OneVersion_ReportAddonInfo", "CostumeNames", Major, Minor, Patch)
 end
 
 function CostumeNames:OnDocLoaded()
