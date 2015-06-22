@@ -4,7 +4,7 @@
 
 require "Window"
 
-local Major, Minor, Patch = 3, 1, 0
+local Major, Minor, Patch = 3, 2, 0
 local CostumeNames = {} 
 local Character, Costumes
 local CN
@@ -17,6 +17,12 @@ function CostumeNames:new(o)
 end
 
 function CostumeNames:Init()
+	-- Only actually load CostumeNames if it is not already loaded
+	-- This is to prevent double-loads caused by "costumenames" vs "CostumeNames" dir renames
+	if Apollo.GetAddon("CostumeNames") ~= nil then
+		return
+	end
+	
 	local bHasConfigureFunction = false
 	local strConfigureButtonText = ""
 	local tDependencies = {
