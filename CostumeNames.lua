@@ -4,7 +4,7 @@
 
 require "Window"
 
-local Major, Minor, Patch = 3, 2, 0
+local Major, Minor, Patch = 3, 3, 0
 local CostumeNames = {} 
 local Character, Costumes
 local CN
