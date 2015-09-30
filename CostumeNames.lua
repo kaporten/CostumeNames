@@ -4,7 +4,7 @@
 
 require "Window"
 
-local Major, Minor, Patch = 3, 3, 0
+local Major, Minor, Patch = 3, 4, 0
 local CostumeNames = {} 
 local Character, Costumes
 local CN
@@ -200,6 +200,8 @@ function CostumeNames:OnEditBoxChanged(wndHandler, wndControl, strText)
 	-- Update Costumes and Character windows
 	CN:UpdateCostumeWindow()
 	CN:UpdateCharacterWindow()
+	
+	Event_FireGenericEvent("CostumeNames_Edit")
 end
 
 -- Hitting return is the same as clicking uncheck
