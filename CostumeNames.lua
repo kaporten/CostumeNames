@@ -4,7 +4,7 @@
 
 require "Window"
 
-local Major, Minor, Patch = 3, 4, 0
+local Major, Minor, Patch = 3, 5, 0
 local CostumeNames = {} 
 local Character, Costumes
 local CN
@@ -34,10 +34,17 @@ function CostumeNames:Init()
 	self.tSettings.tCostumeNames = self.tSettings.tCostumeNames or {}
 	
 	Apollo.RegisterEventHandler("CostumeSet", "OnCostumeChanged", self)
+	--Apollo.RegisterEventHandler("CostumeNames_Edit", "OnCostumeNamesEdit", self)
 	
     Apollo.RegisterAddon(self, bHasConfigureFunction, strConfigureButtonText, tDependencies)	
 	CN = self
 end
+
+--[[
+function CostumeNames:OnCostumeNamesEdit(nIdx, strName)
+	Print("Costume updated, idx: " .. nIdx .. ", name: " .. strName)
+end
+--]]
 
 function CostumeNames:OnDependencyError()
 	-- Either Character or Custumes (pref. both) required for this addon to function
@@ -182,6 +189,7 @@ function CostumeNames:OnCostumesEditNameButtonCheck()
 	wndEditbox:SetSel(string.len(wndEditbox:GetText()), string.len(wndEditbox:GetText()))
 end
 
+-- Called when a costume name editing completes (<return> or clicks the edit-toggle)
 function CostumeNames:OnCostumesEditNameButtonUncheck()
 	-- Hide editbox
 	local wndEditbox = CN.wndCostumesOverlay:FindChild("CostumeNameEdit")	
@@ -189,19 +197,25 @@ function CostumeNames:OnCostumesEditNameButtonUncheck()
 	
 	-- Show dropdown button
 	Costumes.wndMain:FindChild("SelectCostumeWindowToggle"):Show(true, true)
+
+	-- Name actually changed? Or edit just toggled on/off
+	if CN.strEditInProgress ~= nil then
+		local idx = Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex()
+		CN.tSettings.tCostumeNames[idx] = CN.strEditInProgress
+		CN.strEditInProgress = nil
+		
+		-- Update Costumes and Character windows
+		CN:UpdateCostumeWindow()
+		CN:UpdateCharacterWindow()
+		
+		-- Fire generic event informing 3rd party addons of the updated costume name
+		Event_FireGenericEvent("CostumeNames_Edit", idx, CN.tSettings.tCostumeNames[idx])
+	end
 end
 
-function CostumeNames:OnEditBoxChanged(wndHandler, wndControl, strText)
-	local idx = Costumes.nSelectedCostumeId or CostumesLib.GetCostumeIndex()
-	
-	-- Update settings with new name
-	CN.tSettings.tCostumeNames[idx] = strText
-	
-	-- Update Costumes and Character windows
-	CN:UpdateCostumeWindow()
-	CN:UpdateCharacterWindow()
-	
-	Event_FireGenericEvent("CostumeNames_Edit")
+function CostumeNames:OnEditBoxChanged(wndHandler, wndControl, strText)	
+	-- Store updated costume name in addon-scope variable for later "commit"
+	CN.strEditInProgress = strText
 end
 
 -- Hitting return is the same as clicking uncheck
